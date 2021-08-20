@@ -11,8 +11,6 @@ import java.lang.ref.SoftReference;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 public class SimpleArticleService implements ArticleService {
 
@@ -28,38 +26,22 @@ public class SimpleArticleService implements ArticleService {
     public void generate(Store<Word> wordStore, int count, Store<Article> articleStore) {
         LOGGER.info("Генерация статей в количестве {}", count);
         var words = wordStore.findAll();
-        int paket = 0;
-        for (int i = 0; i < count; i++) {
+        List<SoftReference<Article>> softArticleList = new ArrayList<>();
+        int paketArticlesForSave = 0;
+        for (int i = 0; i <= count; i++) {
             LOGGER.info("Сгенерирована статья № {}", i);
-            WeakReference<Article> articleWeak = new WeakReference<>(articleGenerator.generate(words));
-            List<SoftReference<Article>> softReferenceList = new ArrayList<>();
-            softReferenceList.add(new SoftReference<>(articleWeak.get()));
-            paket++;
-            if (paket == 100_000) {
-                for (SoftReference<Article> article : softReferenceList) {
-                    articleStore.save(article.get());
+            WeakReference<Article> weakArticle = new WeakReference<>(articleGenerator.generate(words));
+            softArticleList.add(new SoftReference<>(weakArticle.get()));
+            paketArticlesForSave++;
+            if (paketArticlesForSave == 5_000) {
+                LOGGER.info("Paket = {}, softArticleList size = {}", paketArticlesForSave, softArticleList.size());
+                for (SoftReference<Article> sofArticle : softArticleList) {
+                    articleStore.save(sofArticle.get());
                 }
-                softReferenceList.clear();
-                paket = 0;
+                softArticleList.clear();
+                paketArticlesForSave = 0;
+                LOGGER.info("Paket = {}, softArticleList size = {}", paketArticlesForSave, softArticleList.size());
             }
         }
-        //var articles =
-/*                IntStream.iterate(0, i -> i < count, i -> i + 1)
-                .peek(i -> LOGGER.info("Сгенерирована статья № {}", i))
-                .mapToObj((x) -> new WeakReference(articleGenerator.generate(words)))
-                .filter((x) -> x.get() != null)
-                .map(articleStore::save);*/
-                //.map((x) -> articleStore.save((Article) x.get()));
-                //.collect(Collectors.toList()); //.forEach(articleStore.save(WeakReference::get));
-/*        for (WeakReference article : articleWeak) {
-            if (article != null) {
-                articleStore.save((Article) article.get());
-            }
-        }*/
-
-        //articleStore.sa
-        //articles.forEach(WeakReference::get).;
-
-        //articles.forEach(articleStore::save);
     }
 }
