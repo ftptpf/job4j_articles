@@ -7,10 +7,7 @@ import ru.job4j.articles.model.Word;
 import ru.job4j.articles.service.generator.ArticleGenerator;
 import ru.job4j.articles.store.Store;
 
-import java.lang.ref.SoftReference;
 import java.lang.ref.WeakReference;
-import java.util.ArrayList;
-import java.util.List;
 
 public class SimpleArticleService implements ArticleService {
 
@@ -25,23 +22,12 @@ public class SimpleArticleService implements ArticleService {
     @Override
     public void generate(Store<Word> wordStore, int count, Store<Article> articleStore) {
         LOGGER.info("Генерация статей в количестве {}", count);
-        var words = wordStore.findAll();
-        List<SoftReference<Article>> softArticleList = new ArrayList<>();
-        int paketArticlesForSave = 0;
-        for (int i = 0; i <= count; i++) {
+        var words = wordStore.findAll(); // загружаем слова
+        WeakReference<Article> weakReference; // weak ссылка на статью
+        for (int i = 0; i < count; i++) {
             LOGGER.info("Сгенерирована статья № {}", i);
-            WeakReference<Article> weakArticle = new WeakReference<>(articleGenerator.generate(words));
-            softArticleList.add(new SoftReference<>(weakArticle.get()));
-            paketArticlesForSave++;
-            if (paketArticlesForSave == 5_000) {
-                LOGGER.info("Paket = {}, softArticleList size = {}", paketArticlesForSave, softArticleList.size());
-                for (SoftReference<Article> sofArticle : softArticleList) {
-                    articleStore.save(sofArticle.get());
-                }
-                softArticleList.clear();
-                paketArticlesForSave = 0;
-                LOGGER.info("Paket = {}, softArticleList size = {}", paketArticlesForSave, softArticleList.size());
-            }
+            weakReference = new WeakReference<>(articleGenerator.generate(words)); // генерируем статью
+            articleStore.save(weakReference.get()); // сохраняем статью
         }
     }
 }
