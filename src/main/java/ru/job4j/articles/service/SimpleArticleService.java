@@ -26,8 +26,9 @@ public class SimpleArticleService implements ArticleService {
         WeakReference<Article> weakReference; // weak ссылка на статью
         for (int i = 0; i < count; i++) {
             LOGGER.info("Сгенерирована статья № {}", i);
-            weakReference = new WeakReference<>(articleGenerator.generate(words)); // генерируем статью
-            articleStore.save(weakReference.get()); // сохраняем статью
+            Article article = articleGenerator.generate(words);
+            articleStore.save(article);
+            weakReference = new WeakReference<>(article);
         }
     }
 }
